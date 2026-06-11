@@ -1,6 +1,7 @@
 """
-Прокси-агрегатор для militaryland.net.
-Получает данные через rss2json.com (публичный RSS→JSON конвертер) и прямой RSS.
+Агрегатор военных новостей.
+Источники: АрміяInform (armyinform.com.ua) — официальное агентство Минобороны Украины.
+Получает данные через rss2json.com и прямой RSS.
 """
 
 import json
@@ -17,27 +18,30 @@ CORS = {
     "Access-Control-Allow-Headers": "Content-Type",
 }
 
-RSS_URL  = "https://militaryland.net/feed/"
-RSS2JSON = f"https://api.rss2json.com/v1/api.json?rss_url={RSS_URL}&count=30"
+SOURCES = [
+    {
+        "name":  "АрміяInform",
+        "rss":   "https://armyinform.com.ua/feed/",
+        "label": "armyinform.com.ua",
+    },
+]
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
 }
 
 
-def normalize_item(item: dict) -> dict:
+def normalize_item(item: dict, source_name: str) -> dict:
     title    = item.get("title", "")
-    link     = item.get("link", "") or item.get("url", "") or item.get("guid", "")
-    desc_raw = item.get("description", "") or item.get("summary", "") or item.get("content", "")
+    link     = item.get("link", "") or item.get("guid", "")
+    desc_raw = item.get("description", "") or item.get("content", "")
     desc     = BeautifulSoup(desc_raw, "lxml").get_text(strip=True)[:300] if desc_raw else ""
     date_str = item.get("pubDate", "") or item.get("published", "")
 
-    image = ""
-    enc = item.get("enclosure")
-    if isinstance(enc, dict):
-        image = enc.get("link", "")
-    if not image:
-        image = item.get("thumbnail", "")
+    image = item.get("thumbnail", "")
+    enc   = item.get("enclosure")
+    if isinstance(enc, dict) and not image:
+        image = enc.get("link", "") or enc.get("url", "")
     if not image and desc_raw:
         isoup = BeautifulSoup(desc_raw, "lxml")
         itag  = isoup.find("img")
@@ -58,19 +62,21 @@ def normalize_item(item: dict) -> dict:
         "date":        date_str,
         "image":       image,
         "category":    category,
+        "source":      source_name,
     }
 
 
-def fetch_via_rss2json() -> list:
-    resp = requests.get(RSS2JSON, timeout=15)
+def fetch_rss2json(rss_url: str, source_name: str, count: int = 30) -> list:
+    url  = f"https://api.rss2json.com/v1/api.json?rss_url={rss_url}&count={count}"
+    resp = requests.get(url, timeout=15)
     data = resp.json()
     if data.get("status") == "ok":
-        return [normalize_item(i) for i in data.get("items", []) if i.get("title")]
+        return [normalize_item(i, source_name) for i in data.get("items", []) if i.get("title")]
     return []
 
 
-def fetch_direct_rss() -> list:
-    resp = requests.get(RSS_URL, headers=HEADERS, timeout=15, verify=False)
+def fetch_direct_rss(rss_url: str, source_name: str) -> list:
+    resp = requests.get(rss_url, headers=HEADERS, timeout=15, verify=False)
     if resp.status_code != 200:
         return []
     soup     = BeautifulSoup(resp.text, "lxml-xml")
@@ -106,6 +112,7 @@ def fetch_direct_rss() -> list:
             "date":        pub_el.get_text(strip=True) if pub_el else "",
             "image":       image,
             "category":    cat_el.get_text(strip=True) if cat_el else "Новости",
+            "source":      source_name,
         })
     return articles
 
@@ -117,48 +124,47 @@ def handler(event: dict, context) -> dict:
     params = event.get("queryStringParameters") or {}
     page   = int(params.get("page", 1))
 
-    articles = []
-    source   = ""
-    last_err = None
+    all_articles = []
 
-    # Способ 1: rss2json.com — обходит Cloudflare
-    try:
-        articles = fetch_via_rss2json()
-        source   = "rss2json"
-    except Exception as e:
-        last_err = str(e)
-
-    # Способ 2: прямой RSS с Googlebot UA
-    if not articles:
+    for src in SOURCES:
+        items = []
+        # Способ 1: rss2json
         try:
-            articles = fetch_direct_rss()
-            source   = "direct_rss"
-        except Exception as e:
-            last_err = str(e)
+            items = fetch_rss2json(src["rss"], src["name"])
+        except Exception:
+            pass
+        # Способ 2: прямой RSS
+        if not items:
+            try:
+                items = fetch_direct_rss(src["rss"], src["name"])
+            except Exception:
+                pass
+        all_articles.extend(items)
 
-    if not articles and last_err:
-        return {
-            "statusCode": 502,
-            "headers": CORS,
-            "body": json.dumps({
-                "error":    f"Не удалось получить данные: {last_err}",
-                "articles": [],
-            }, ensure_ascii=False),
-        }
+    # Сортируем по дате (новые первыми)
+    def parse_date(d: str):
+        try:
+            return datetime.strptime(d[:25], "%a, %d %b %Y %H:%M:%S")
+        except Exception:
+            try:
+                return datetime.fromisoformat(d[:19])
+            except Exception:
+                return datetime.min
+
+    all_articles.sort(key=lambda a: parse_date(a.get("date", "")), reverse=True)
 
     per_page = 20
     start    = (page - 1) * per_page
-    paged    = articles[start:start + per_page]
+    paged    = all_articles[start:start + per_page]
 
     return {
         "statusCode": 200,
-        "headers": {**CORS, "Content-Type": "application/json"},
-        "body": json.dumps({
+        "headers":    {**CORS, "Content-Type": "application/json"},
+        "body":       json.dumps({
             "articles":   paged,
-            "total":      len(articles),
+            "total":      len(all_articles),
             "page":       page,
             "per_page":   per_page,
-            "source_url": source,
             "fetched_at": datetime.utcnow().isoformat() + "Z",
         }, ensure_ascii=False),
     }
