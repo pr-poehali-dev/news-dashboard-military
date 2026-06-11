@@ -1,5 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
+
+const API_URL = "https://functions.poehali.dev/1f4c1d81-4aff-475a-a924-d103c8bc3893";
+
+interface MilArticle {
+  title: string;
+  description: string;
+  link: string;
+  date: string;
+  image: string;
+  category: string;
+}
 
 type Section = "news" | "units" | "brigades" | "commanders" | "analytics" | "settings";
 
@@ -94,21 +105,21 @@ const StatCard = ({ label, value, icon, color, delay }: {
   </div>
 );
 
-const LiveTicker = () => {
-  const items = [
-    "⚡ СРОЧНОЕ СООБЩЕНИЕ",
-    "▸ 3-я штурмовая отразила атаку на Покровск",
-    "▸ Авиация уничтожила 2 вертолёта противника",
-    "▸ 47-я бригада получила подкрепление",
-    "▸ Зафиксировано движение колонны на востоке",
-    "▸ Переговоры по гуманитарным коридорам",
+const LiveTicker = ({ headlines }: { headlines: string[] }) => {
+  const defaultItems = [
+    "⚡ MILITARYLAND.NET",
+    "▸ Загрузка актуальных новостей...",
   ];
+  const items = headlines.length > 0
+    ? headlines.map(h => `▸ ${h}`)
+    : defaultItems;
+  const doubled = [...items, ...items];
   return (
     <div className="relative h-8 overflow-hidden flex items-center" style={{ background: 'rgba(245,158,11,0.07)', borderTop: '1px solid rgba(245,158,11,0.18)', borderBottom: '1px solid rgba(245,158,11,0.18)' }}>
       <div className="px-3 py-1 text-xs font-oswald font-semibold tracking-widest shrink-0" style={{ background: 'rgba(245,158,11,0.9)', color: '#0a0f0b' }}>LIVE</div>
       <div className="overflow-hidden flex-1 ml-2">
         <div className="animate-ticker whitespace-nowrap text-xs font-ibm" style={{ color: 'var(--mil-amber)' }}>
-          {[...items, ...items].join("   ·   ")}
+          {doubled.join("   ·   ")}
         </div>
       </div>
       <div className="w-2 h-2 rounded-full shrink-0 mr-3 animate-pulse" style={{ background: 'var(--mil-amber)' }} />
@@ -144,70 +155,164 @@ const RadarWidget = () => (
 
 // ─── News ─────────────────────────────────────────────────────────────────────
 const NewsSection = () => {
-  const [filter, setFilter] = useState<"all" | "telegram" | "facebook">("all");
-  const filtered = filter === "all" ? mockNews : mockNews.filter(n => n.source === filter);
+  const [articles, setArticles] = useState<MilArticle[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState("");
+  const [page, setPage]         = useState(1);
+  const [total, setTotal]       = useState(0);
+  const [lastFetch, setLastFetch] = useState("");
+  const [catFilter, setCatFilter] = useState("all");
+  const [categories, setCategories] = useState<string[]>([]);
+
+  const fetchNews = useCallback(async (p = 1) => {
+    setLoading(true);
+    setError("");
+    try {
+      const res  = await fetch(`${API_URL}?page=${p}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка сервера");
+      const parsed = JSON.parse(data.body || "{}");
+      setArticles(parsed.articles || []);
+      setTotal(parsed.total || 0);
+      setLastFetch(parsed.fetched_at || "");
+      // Собираем уникальные категории
+      const cats: string[] = Array.from(new Set((parsed.articles || []).map((a: MilArticle) => a.category).filter(Boolean)));
+      setCategories(cats);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Неизвестная ошибка");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchNews(1); }, [fetchNews]);
+  useEffect(() => {
+    const t = setInterval(() => fetchNews(page), 5 * 60 * 1000); // авто-обновление каждые 5 мин
+    return () => clearInterval(t);
+  }, [fetchNews, page]);
+
+  const filtered = catFilter === "all" ? articles : articles.filter(a => a.category === catFilter);
+
+  const formatDate = (d: string) => {
+    if (!d) return "";
+    try {
+      return new Date(d).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    } catch { return d.slice(0, 16); }
+  };
 
   return (
     <div className="animate-fade-in-up" style={{ animationFillMode: 'forwards' }}>
-      <div className="flex items-center justify-between mb-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>ЛЕНТА НОВОСТЕЙ</h2>
-          <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Telegram + Facebook · Обновление в реальном времени</p>
+          <p className="text-xs font-ibm mt-1 flex items-center gap-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            <span>militaryland.net</span>
+            {lastFetch && <span>· обновлено {formatDate(lastFetch)}</span>}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          {(["all", "telegram", "facebook"] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)} className="px-3 py-1.5 rounded text-xs font-ibm font-medium transition-all" style={{
-              background: filter === f ? (f === "telegram" ? "rgba(56,189,248,0.15)" : f === "facebook" ? "rgba(99,102,241,0.15)" : "rgba(74,222,128,0.15)") : "rgba(255,255,255,0.04)",
-              color: filter === f ? (f === "telegram" ? "var(--mil-blue)" : f === "facebook" ? "#818cf8" : "var(--mil-green)") : "hsl(var(--muted-foreground))",
-              border: `1px solid ${filter === f ? (f === "telegram" ? "rgba(56,189,248,0.3)" : f === "facebook" ? "rgba(99,102,241,0.3)" : "rgba(74,222,128,0.3)") : "var(--mil-border)"}`,
-            }}>
-              {f === "all" ? "Все" : f === "telegram" ? "Telegram" : "Facebook"}
+        <button onClick={() => fetchNews(page)}
+          className="flex items-center gap-2 px-3 py-2 rounded text-xs font-ibm transition-all hover:opacity-80"
+          style={{ background: 'rgba(74,222,128,0.1)', color: 'var(--mil-green)', border: '1px solid rgba(74,222,128,0.2)' }}>
+          <Icon name={loading ? "Loader" : "RefreshCw"} size={13} className={loading ? "animate-spin" : ""} />
+          Обновить
+        </button>
+      </div>
+
+      {/* Категории */}
+      {categories.length > 0 && (
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
+          {["all", ...categories].map(cat => (
+            <button key={cat} onClick={() => setCatFilter(cat)}
+              className="px-3 py-1 rounded text-xs font-ibm font-medium transition-all"
+              style={{
+                background: catFilter === cat ? "rgba(74,222,128,0.15)" : "rgba(255,255,255,0.03)",
+                color: catFilter === cat ? "var(--mil-green)" : "hsl(var(--muted-foreground))",
+                border: `1px solid ${catFilter === cat ? "rgba(74,222,128,0.3)" : "var(--mil-border)"}`,
+              }}>
+              {cat === "all" ? "Все категории" : cat}
             </button>
           ))}
         </div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        {[
-          { name: "Оперативный канал", source: "telegram", subs: "247K" },
-          { name: "Официальная страница", source: "facebook", subs: "891K" },
-          { name: "Военный канал", source: "telegram", subs: "134K" },
-          { name: "Пресс-служба", source: "facebook", subs: "1.2M" },
-        ].map((ch, i) => (
-          <div key={i} className="mil-card rounded-lg p-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: ch.source === "telegram" ? "rgba(56,189,248,0.15)" : "rgba(99,102,241,0.15)" }}>
-              <Icon name={ch.source === "telegram" ? "Send" : "Globe"} size={14} style={{ color: ch.source === "telegram" ? "var(--mil-blue)" : "#818cf8" }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-ibm font-medium truncate" style={{ color: 'hsl(var(--foreground))' }}>{ch.name}</div>
-              <div className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{ch.subs}</div>
-            </div>
-            <div className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse" style={{ background: 'var(--mil-green)' }} />
-          </div>
-        ))}
-      </div>
+      {/* Состояния загрузки / ошибки */}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="w-10 h-10 rounded-full border-2 animate-spin" style={{ borderColor: 'var(--mil-border)', borderTopColor: 'var(--mil-green)' }} />
+          <span className="text-xs font-ibm" style={{ color: 'hsl(var(--muted-foreground))' }}>Загрузка новостей с militaryland.net...</span>
+        </div>
+      )}
 
-      <div className="space-y-3">
-        {filtered.map((item, i) => (
-          <div key={item.id} className={`news-item ${item.source === "telegram" ? "tg" : "fb"} pl-4 py-3 pr-4 rounded-r-lg opacity-0 animate-fade-in-up`}
-            style={{ background: item.urgent ? "rgba(245,158,11,0.04)" : "rgba(255,255,255,0.02)", animationDelay: `${i * 60}ms`, animationFillMode: 'forwards' }}>
-            <div className="flex items-start justify-between gap-3 mb-1.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="w-5 h-5 rounded flex items-center justify-center" style={{ background: item.source === "telegram" ? "rgba(56,189,248,0.15)" : "rgba(99,102,241,0.15)" }}>
-                  <Icon name={item.source === "telegram" ? "Send" : "Globe"} size={10} style={{ color: item.source === "telegram" ? "var(--mil-blue)" : "#818cf8" }} />
+      {!loading && error && (
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <Icon name="AlertTriangle" size={32} style={{ color: 'var(--mil-amber)' }} />
+          <p className="text-sm font-ibm text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>{error}</p>
+          <button onClick={() => fetchNews(page)} className="px-4 py-2 rounded text-xs font-ibm transition-all hover:opacity-80"
+            style={{ background: 'rgba(74,222,128,0.1)', color: 'var(--mil-green)', border: '1px solid rgba(74,222,128,0.2)' }}>
+            Повторить
+          </button>
+        </div>
+      )}
+
+      {/* Лента */}
+      {!loading && !error && (
+        <>
+          <div className="space-y-3 mb-6">
+            {filtered.map((item, i) => (
+              <a key={i} href={item.link} target="_blank" rel="noopener noreferrer"
+                className="news-item tg pl-4 py-3 pr-4 rounded-r-lg block opacity-0 animate-fade-in-up hover:no-underline"
+                style={{ background: "rgba(255,255,255,0.02)", animationDelay: `${i * 50}ms`, animationFillMode: 'forwards', textDecoration: 'none' }}>
+                <div className="flex items-start gap-4">
+                  {item.image && (
+                    <img src={item.image} alt="" className="w-16 h-16 object-cover rounded shrink-0"
+                      style={{ border: '1px solid var(--mil-border)' }}
+                      onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-1.5 py-0.5 rounded text-xs font-oswald tracking-wider"
+                          style={{ background: 'rgba(74,222,128,0.1)', color: 'var(--mil-green)', border: '1px solid rgba(74,222,128,0.2)', fontSize: '10px' }}>
+                          {item.category}
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }}>{formatDate(item.date)}</span>
+                    </div>
+                    <h4 className="font-oswald font-medium text-sm leading-snug mb-1" style={{ color: 'hsl(var(--foreground))' }}>{item.title}</h4>
+                    {item.description && (
+                      <p className="text-xs font-ibm leading-relaxed line-clamp-2" style={{ color: 'hsl(var(--muted-foreground))' }}>{item.description}</p>
+                    )}
+                    <div className="flex items-center gap-1 mt-2">
+                      <Icon name="ExternalLink" size={10} style={{ color: 'hsl(var(--muted-foreground))' }} />
+                      <span className="text-xs font-ibm" style={{ color: 'hsl(var(--muted-foreground))' }}>militaryland.net</span>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-xs font-ibm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{item.channel}</span>
-                {item.urgent && <span className="px-1.5 py-0.5 rounded text-xs font-oswald tracking-wider status-alert">СРОЧНО</span>}
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                {item.views && <span className="text-xs font-mono" style={{ color: 'hsl(var(--muted-foreground))' }}>{(item.views / 1000).toFixed(1)}K</span>}
-                <span className="text-xs font-mono" style={{ color: 'hsl(var(--muted-foreground))' }}>{item.time}</span>
-              </div>
-            </div>
-            <p className="text-sm font-ibm leading-relaxed" style={{ color: 'hsl(var(--foreground))' }}>{item.text}</p>
+              </a>
+            ))}
           </div>
-        ))}
-      </div>
+
+          {/* Пагинация */}
+          {total > 20 && (
+            <div className="flex items-center justify-center gap-3">
+              <button onClick={() => { setPage(p => p - 1); fetchNews(page - 1); }} disabled={page === 1}
+                className="px-4 py-2 rounded text-xs font-ibm transition-all disabled:opacity-30"
+                style={{ background: 'rgba(255,255,255,0.04)', color: 'hsl(var(--foreground))', border: '1px solid var(--mil-border)' }}>
+                ← Назад
+              </button>
+              <span className="text-xs font-mono" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Страница {page} · {total} материалов
+              </span>
+              <button onClick={() => { setPage(p => p + 1); fetchNews(page + 1); }} disabled={filtered.length < 20}
+                className="px-4 py-2 rounded text-xs font-ibm transition-all disabled:opacity-30"
+                style={{ background: 'rgba(255,255,255,0.04)', color: 'hsl(var(--foreground))', border: '1px solid var(--mil-border)' }}>
+                Вперёд →
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
@@ -519,15 +624,30 @@ export default function Index() {
   const [section, setSection] = useState<Section>("news");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [time, setTime] = useState(new Date());
-  const [newsCount, setNewsCount] = useState(47);
+  const [headlines, setHeadlines] = useState<string[]>([]);
+  const [newsCount, setNewsCount] = useState(0);
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
+  // Загружаем заголовки для тикера и счётчика
   useEffect(() => {
-    const t = setInterval(() => setNewsCount(c => c + 1), 15000);
+    const load = async () => {
+      try {
+        const res  = await fetch(API_URL);
+        const data = await res.json();
+        const parsed = JSON.parse(data.body || "{}");
+        const arts: MilArticle[] = parsed.articles || [];
+        setHeadlines(arts.map(a => a.title).filter(Boolean).slice(0, 10));
+        setNewsCount(parsed.total || arts.length);
+      } catch {
+        // тихий фейл — тикер покажет дефолт
+      }
+    };
+    load();
+    const t = setInterval(load, 5 * 60 * 1000);
     return () => clearInterval(t);
   }, []);
 
@@ -616,7 +736,7 @@ export default function Index() {
           </div>
         </header>
 
-        <LiveTicker />
+        <LiveTicker headlines={headlines} />
 
         <div className="shrink-0 grid grid-cols-4 gap-4 px-6 py-4" style={{ borderBottom: '1px solid var(--mil-border)' }}>
           <StatCard label="Подразделений" value={mockUnits.length} icon="Shield" color="var(--mil-green)" delay={0} />
