@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 type Section = "news" | "units" | "brigades" | "commanders" | "analytics" | "settings";
 
 interface NewsItem {
@@ -46,43 +45,41 @@ interface Commander {
   awards: number;
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
 const mockNews: NewsItem[] = [
-  { id: 1, source: "telegram", channel: "Оперативний ЗСУ", text: "Підрозділи 3-ї бригади успішно відбили атаку на напрямку Покровськ, знищено 4 одиниці бронетехніки противника.", time: "14:32", urgent: true, views: 12400 },
-  { id: 2, source: "facebook", channel: "Генштаб ЗСУ", text: "Ворог здійснив 87 обстрілів по 12 населених пунктах. Сили оборони відповіли контрбатарейним вогнем.", time: "14:15", views: 45200 },
-  { id: 3, source: "telegram", channel: "Воєнний канал", text: "Авіація ЗСУ знищила вогневу позицію противника в районі Херсону. Підтверджено ліквідацію ЗРК.", time: "13:58", views: 8900 },
-  { id: 4, source: "telegram", channel: "Оперативний ЗСУ", text: "На Харківському напрямку зафіксовано переміщення колони техніки противника. Задіяні ударні дрони.", time: "13:44", views: 21300 },
-  { id: 5, source: "facebook", channel: "Міноборони України", text: "Підписано контракт на постачання нових систем протиповітряної оборони. Очікується надходження до кінця місяця.", time: "13:20", views: 67100 },
-  { id: 6, source: "telegram", channel: "Воєнний канал", text: "Розвідка підтвердила концентрацію сил противника на схід від Курахового. Командування вживає заходів.", time: "12:55", urgent: true, views: 15600 },
-  { id: 7, source: "facebook", channel: "Генштаб ЗСУ", text: "Штаб оперативного командування провів нараду з командирами бригад. Узгоджено плани на найближчий тиждень.", time: "12:30", views: 33800 },
+  { id: 1, source: "telegram", channel: "Оперативный канал", text: "Подразделения 3-й бригады успешно отразили атаку на направлении Покровск, уничтожено 4 единицы бронетехники противника.", time: "14:32", urgent: true, views: 12400 },
+  { id: 2, source: "facebook", channel: "Официальная страница", text: "Противник произвёл 87 обстрелов по 12 населённым пунктам. Силы обороны ответили контрбатарейным огнём.", time: "14:15", views: 45200 },
+  { id: 3, source: "telegram", channel: "Военный канал", text: "Авиация уничтожила огневую позицию противника в районе Херсона. Подтверждена ликвидация ЗРК.", time: "13:58", views: 8900 },
+  { id: 4, source: "telegram", channel: "Оперативный канал", text: "На Харьковском направлении зафиксировано перемещение колонны техники противника. Задействованы ударные дроны.", time: "13:44", views: 21300 },
+  { id: 5, source: "facebook", channel: "Пресс-служба", text: "Подписан контракт на поставку новых систем противовоздушной обороны. Поступление ожидается до конца месяца.", time: "13:20", views: 67100 },
+  { id: 6, source: "telegram", channel: "Военный канал", text: "Разведка подтвердила концентрацию сил противника к востоку от Курахово. Командование принимает меры.", time: "12:55", urgent: true, views: 15600 },
+  { id: 7, source: "facebook", channel: "Официальная страница", text: "Штаб оперативного командования провёл совещание с командирами бригад. Согласованы планы на ближайшую неделю.", time: "12:30", views: 33800 },
 ];
 
 const mockUnits: Unit[] = [
-  { id: 1, name: "1-й батальйон", code: "1БТГ-001", type: "Піхота", status: "active", strength: 487, maxStrength: 500, location: "Запорізька обл.", commander: "полк. Петренко В.О." },
-  { id: 2, name: "2-й батальйон", code: "2БТГ-002", type: "Механізований", status: "active", strength: 423, maxStrength: 500, location: "Херсонська обл.", commander: "майор Ковальчук Р.С." },
-  { id: 3, name: "3-й батальйон", code: "3БТГ-003", type: "Штурмовий", status: "alert", strength: 312, maxStrength: 500, location: "Донецька обл.", commander: "підп. Мельник О.Д." },
-  { id: 4, name: "4-й батальйон", code: "4БТГ-004", type: "Розвідка", status: "active", strength: 198, maxStrength: 250, location: "Харківська обл.", commander: "кап. Бойко С.М." },
-  { id: 5, name: "5-й батальйон", code: "5БТГ-005", type: "Артилерія", status: "critical", strength: 145, maxStrength: 300, location: "Миколаївська обл.", commander: "полк. Сидоренко І.В." },
-  { id: 6, name: "6-й батальйон", code: "6БТГ-006", type: "ППО", status: "active", strength: 276, maxStrength: 300, location: "Дніпропетровська обл.", commander: "майор Гриценко А.Л." },
+  { id: 1, name: "1-й батальон", code: "1БТГ-001", type: "Пехота", status: "active", strength: 487, maxStrength: 500, location: "Запорожская обл.", commander: "полк. Петренко В.А." },
+  { id: 2, name: "2-й батальон", code: "2БТГ-002", type: "Механизированный", status: "active", strength: 423, maxStrength: 500, location: "Херсонская обл.", commander: "майор Ковальчук Р.С." },
+  { id: 3, name: "3-й батальон", code: "3БТГ-003", type: "Штурмовой", status: "alert", strength: 312, maxStrength: 500, location: "Донецкая обл.", commander: "подп. Мельник О.Д." },
+  { id: 4, name: "4-й батальон", code: "4БТГ-004", type: "Разведка", status: "active", strength: 198, maxStrength: 250, location: "Харьковская обл.", commander: "кап. Бойко С.Н." },
+  { id: 5, name: "5-й батальон", code: "5БТГ-005", type: "Артиллерия", status: "critical", strength: 145, maxStrength: 300, location: "Николаевская обл.", commander: "полк. Сидоренко И.В." },
+  { id: 6, name: "6-й батальон", code: "6БТГ-006", type: "ПВО", status: "active", strength: 276, maxStrength: 300, location: "Днепропетровская обл.", commander: "майор Гриценко А.Л." },
 ];
 
 const mockBrigades: Brigade[] = [
-  { id: 1, name: "1-а окрема бригада", number: "1 ОБр", status: "active", unitsCount: 8, location: "Схід", formed: "2022" },
-  { id: 2, name: "3-я штурмова бригада", number: "3 ШБр", status: "active", unitsCount: 6, location: "Південь", formed: "2022" },
-  { id: 3, name: "47-а окрема бригада", number: "47 ОМБр", status: "alert", unitsCount: 5, location: "Захід", formed: "2023" },
-  { id: 4, name: "92-а окрема бригада", number: "92 ОМБр", status: "active", unitsCount: 7, location: "Північ", formed: "2014" },
-  { id: 5, name: "110-а бригада", number: "110 ОМБр", status: "critical", unitsCount: 4, location: "Донецьк", formed: "2022" },
+  { id: 1, name: "1-я отдельная бригада", number: "1 ОБр", status: "active", unitsCount: 8, location: "Восток", formed: "2022" },
+  { id: 2, name: "3-я штурмовая бригада", number: "3 ШБр", status: "active", unitsCount: 6, location: "Юг", formed: "2022" },
+  { id: 3, name: "47-я отдельная бригада", number: "47 ОМБр", status: "alert", unitsCount: 5, location: "Запад", formed: "2023" },
+  { id: 4, name: "92-я отдельная бригада", number: "92 ОМБр", status: "active", unitsCount: 7, location: "Север", formed: "2014" },
+  { id: 5, name: "110-я бригада", number: "110 ОМБр", status: "critical", unitsCount: 4, location: "Донецк", formed: "2022" },
 ];
 
 const mockCommanders: Commander[] = [
-  { id: 1, name: "Петренко Валерій Олексійович", rank: "Полковник", unit: "1 ОБр", status: "active", since: "2022", awards: 4 },
-  { id: 2, name: "Ковальчук Роман Сергійович", rank: "Майор", unit: "2 БТГ", status: "active", since: "2023", awards: 2 },
-  { id: 3, name: "Мельник Олег Дмитрович", rank: "Підполковник", unit: "3 ШБр", status: "alert", since: "2022", awards: 3 },
-  { id: 4, name: "Бойко Степан Миколайович", rank: "Капітан", unit: "4 БТГ", status: "active", since: "2023", awards: 1 },
-  { id: 5, name: "Сидоренко Іван Васильович", rank: "Полковник", unit: "92 ОМБр", status: "active", since: "2014", awards: 6 },
+  { id: 1, name: "Петренко Валерий Алексеевич", rank: "Полковник", unit: "1 ОБр", status: "active", since: "2022", awards: 4 },
+  { id: 2, name: "Ковальчук Роман Сергеевич", rank: "Майор", unit: "2 БТГ", status: "active", since: "2023", awards: 2 },
+  { id: 3, name: "Мельник Олег Дмитриевич", rank: "Подполковник", unit: "3 ШБр", status: "alert", since: "2022", awards: 3 },
+  { id: 4, name: "Бойко Степан Николаевич", rank: "Капитан", unit: "4 БТГ", status: "active", since: "2023", awards: 1 },
+  { id: 5, name: "Сидоренко Иван Васильевич", rank: "Полковник", unit: "92 ОМБр", status: "active", since: "2014", awards: 6 },
 ];
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
 const StatCard = ({ label, value, icon, color, delay }: {
   label: string; value: string | number; icon: string; color: string; delay: number;
 }) => (
@@ -99,12 +96,12 @@ const StatCard = ({ label, value, icon, color, delay }: {
 
 const LiveTicker = () => {
   const items = [
-    "⚡ ТЕРМІНОВА ІНФОРМАЦІЯ",
-    "▸ 3-я штурмова відбила атаку на Покровськ",
-    "▸ Авіація ЗСУ знищила 2 вертольоти",
-    "▸ 47-а бригада отримала підкріплення",
-    "▸ Зафіксовано рух колони на сході",
-    "▸ Переговори щодо гуманітарних коридорів",
+    "⚡ СРОЧНОЕ СООБЩЕНИЕ",
+    "▸ 3-я штурмовая отразила атаку на Покровск",
+    "▸ Авиация уничтожила 2 вертолёта противника",
+    "▸ 47-я бригада получила подкрепление",
+    "▸ Зафиксировано движение колонны на востоке",
+    "▸ Переговоры по гуманитарным коридорам",
   ];
   return (
     <div className="relative h-8 overflow-hidden flex items-center" style={{ background: 'rgba(245,158,11,0.07)', borderTop: '1px solid rgba(245,158,11,0.18)', borderBottom: '1px solid rgba(245,158,11,0.18)' }}>
@@ -145,7 +142,7 @@ const RadarWidget = () => (
   </div>
 );
 
-// ─── News Section ─────────────────────────────────────────────────────────────
+// ─── News ─────────────────────────────────────────────────────────────────────
 const NewsSection = () => {
   const [filter, setFilter] = useState<"all" | "telegram" | "facebook">("all");
   const filtered = filter === "all" ? mockNews : mockNews.filter(n => n.source === filter);
@@ -154,8 +151,8 @@ const NewsSection = () => {
     <div className="animate-fade-in-up" style={{ animationFillMode: 'forwards' }}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>СТРІЧКА НОВИН</h2>
-          <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Telegram + Facebook · Оновлення в реальному часі</p>
+          <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>ЛЕНТА НОВОСТЕЙ</h2>
+          <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Telegram + Facebook · Обновление в реальном времени</p>
         </div>
         <div className="flex items-center gap-2">
           {(["all", "telegram", "facebook"] as const).map(f => (
@@ -164,7 +161,7 @@ const NewsSection = () => {
               color: filter === f ? (f === "telegram" ? "var(--mil-blue)" : f === "facebook" ? "#818cf8" : "var(--mil-green)") : "hsl(var(--muted-foreground))",
               border: `1px solid ${filter === f ? (f === "telegram" ? "rgba(56,189,248,0.3)" : f === "facebook" ? "rgba(99,102,241,0.3)" : "rgba(74,222,128,0.3)") : "var(--mil-border)"}`,
             }}>
-              {f === "all" ? "Всі" : f === "telegram" ? "Telegram" : "Facebook"}
+              {f === "all" ? "Все" : f === "telegram" ? "Telegram" : "Facebook"}
             </button>
           ))}
         </div>
@@ -172,10 +169,10 @@ const NewsSection = () => {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
-          { name: "Оперативний ЗСУ", source: "telegram", subs: "247K" },
-          { name: "Генштаб ЗСУ", source: "facebook", subs: "891K" },
-          { name: "Воєнний канал", source: "telegram", subs: "134K" },
-          { name: "Міноборони", source: "facebook", subs: "1.2M" },
+          { name: "Оперативный канал", source: "telegram", subs: "247K" },
+          { name: "Официальная страница", source: "facebook", subs: "891K" },
+          { name: "Военный канал", source: "telegram", subs: "134K" },
+          { name: "Пресс-служба", source: "facebook", subs: "1.2M" },
         ].map((ch, i) => (
           <div key={i} className="mil-card rounded-lg p-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: ch.source === "telegram" ? "rgba(56,189,248,0.15)" : "rgba(99,102,241,0.15)" }}>
@@ -200,7 +197,7 @@ const NewsSection = () => {
                   <Icon name={item.source === "telegram" ? "Send" : "Globe"} size={10} style={{ color: item.source === "telegram" ? "var(--mil-blue)" : "#818cf8" }} />
                 </div>
                 <span className="text-xs font-ibm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{item.channel}</span>
-                {item.urgent && <span className="px-1.5 py-0.5 rounded text-xs font-oswald tracking-wider status-alert">ТЕРМІНОВО</span>}
+                {item.urgent && <span className="px-1.5 py-0.5 rounded text-xs font-oswald tracking-wider status-alert">СРОЧНО</span>}
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 {item.views && <span className="text-xs font-mono" style={{ color: 'hsl(var(--muted-foreground))' }}>{(item.views / 1000).toFixed(1)}K</span>}
@@ -215,19 +212,19 @@ const NewsSection = () => {
   );
 };
 
-// ─── Units Section ────────────────────────────────────────────────────────────
+// ─── Units ────────────────────────────────────────────────────────────────────
 const UnitsSection = () => {
   const [selected, setSelected] = useState<number | null>(null);
   return (
     <div className="animate-fade-in-up" style={{ animationFillMode: 'forwards' }}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>ПІДРОЗДІЛИ</h2>
-          <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{mockUnits.length} активних підрозділів</p>
+          <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>ПОДРАЗДЕЛЕНИЯ</h2>
+          <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{mockUnits.length} активных подразделений</p>
         </div>
         <button className="flex items-center gap-2 px-4 py-2 rounded text-xs font-ibm font-medium transition-all hover:opacity-90"
           style={{ background: 'rgba(74,222,128,0.15)', color: 'var(--mil-green)', border: '1px solid rgba(74,222,128,0.3)' }}>
-          <Icon name="Plus" size={14} /> Додати підрозділ
+          <Icon name="Plus" size={14} /> Добавить подразделение
         </button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -241,16 +238,16 @@ const UnitsSection = () => {
                 <div className="text-xs font-mono mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>{unit.code}</div>
               </div>
               <span className={`px-2 py-0.5 rounded text-xs font-oswald tracking-wider ${unit.status === "active" ? "status-active" : unit.status === "alert" ? "status-alert" : "status-critical"}`}>
-                {unit.status === "active" ? "АКТИВНИЙ" : unit.status === "alert" ? "УВАГА" : "КРИТИЧНО"}
+                {unit.status === "active" ? "АКТИВЕН" : unit.status === "alert" ? "ВНИМАНИЕ" : "КРИТИЧНО"}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 mb-3 text-xs font-ibm">
               <div><span style={{ color: 'hsl(var(--muted-foreground))' }}>Тип: </span><span style={{ color: 'hsl(var(--foreground))' }}>{unit.type}</span></div>
-              <div><span style={{ color: 'hsl(var(--muted-foreground))' }}>Локація: </span><span style={{ color: 'hsl(var(--foreground))' }}>{unit.location}</span></div>
+              <div><span style={{ color: 'hsl(var(--muted-foreground))' }}>Локация: </span><span style={{ color: 'hsl(var(--foreground))' }}>{unit.location}</span></div>
             </div>
             <div>
               <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="font-ibm" style={{ color: 'hsl(var(--muted-foreground))' }}>Особовий склад</span>
+                <span className="font-ibm" style={{ color: 'hsl(var(--muted-foreground))' }}>Личный состав</span>
                 <span className="font-mono" style={{ color: unit.status === "critical" ? "var(--mil-red)" : unit.status === "alert" ? "var(--mil-amber)" : "var(--mil-green)" }}>
                   {unit.strength}/{unit.maxStrength}
                 </span>
@@ -274,17 +271,17 @@ const UnitsSection = () => {
   );
 };
 
-// ─── Brigades Section ─────────────────────────────────────────────────────────
+// ─── Brigades ─────────────────────────────────────────────────────────────────
 const BrigadesSection = () => (
   <div className="animate-fade-in-up" style={{ animationFillMode: 'forwards' }}>
     <div className="flex items-center justify-between mb-6">
       <div>
-        <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>БРИГАДИ</h2>
-        <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{mockBrigades.length} бригад на обліку</p>
+        <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>БРИГАДЫ</h2>
+        <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{mockBrigades.length} бригад на учёте</p>
       </div>
       <button className="flex items-center gap-2 px-4 py-2 rounded text-xs font-ibm font-medium transition-all hover:opacity-90"
         style={{ background: 'rgba(74,222,128,0.15)', color: 'var(--mil-green)', border: '1px solid rgba(74,222,128,0.3)' }}>
-        <Icon name="Plus" size={14} /> Додати бригаду
+        <Icon name="Plus" size={14} /> Добавить бригаду
       </button>
     </div>
     <div className="space-y-3">
@@ -300,13 +297,13 @@ const BrigadesSection = () => (
                 <div className="font-oswald font-semibold tracking-wide" style={{ color: 'hsl(var(--foreground))' }}>{brigade.name}</div>
                 <div className="flex items-center gap-3 mt-1 text-xs font-ibm" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <span className="flex items-center gap-1"><Icon name="MapPin" size={10} />{brigade.location}</span>
-                  <span className="flex items-center gap-1"><Icon name="Users" size={10} />{brigade.unitsCount} підрозділів</span>
-                  <span className="flex items-center gap-1"><Icon name="Calendar" size={10} />з {brigade.formed}</span>
+                  <span className="flex items-center gap-1"><Icon name="Users" size={10} />{brigade.unitsCount} подразделений</span>
+                  <span className="flex items-center gap-1"><Icon name="Calendar" size={10} />с {brigade.formed}</span>
                 </div>
               </div>
             </div>
             <span className={`px-2 py-1 rounded text-xs font-oswald tracking-wider ${brigade.status === "active" ? "status-active" : brigade.status === "alert" ? "status-alert" : "status-critical"}`}>
-              {brigade.status === "active" ? "АКТИВНА" : brigade.status === "alert" ? "УВАГА" : "КРИТИЧНО"}
+              {brigade.status === "active" ? "АКТИВНА" : brigade.status === "alert" ? "ВНИМАНИЕ" : "КРИТИЧНО"}
             </span>
           </div>
         </div>
@@ -315,17 +312,17 @@ const BrigadesSection = () => (
   </div>
 );
 
-// ─── Commanders Section ───────────────────────────────────────────────────────
+// ─── Commanders ───────────────────────────────────────────────────────────────
 const CommandersSection = () => (
   <div className="animate-fade-in-up" style={{ animationFillMode: 'forwards' }}>
     <div className="flex items-center justify-between mb-6">
       <div>
-        <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>КОМАНДИРИ</h2>
-        <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Командний склад</p>
+        <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>КОМАНДИРЫ</h2>
+        <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Командный состав</p>
       </div>
       <button className="flex items-center gap-2 px-4 py-2 rounded text-xs font-ibm font-medium transition-all hover:opacity-90"
         style={{ background: 'rgba(74,222,128,0.15)', color: 'var(--mil-green)', border: '1px solid rgba(74,222,128,0.3)' }}>
-        <Icon name="Plus" size={14} /> Додати командира
+        <Icon name="Plus" size={14} /> Добавить командира
       </button>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -344,15 +341,15 @@ const CommandersSection = () => (
           </div>
           <div className="space-y-2 text-xs font-ibm">
             <div className="flex justify-between">
-              <span style={{ color: 'hsl(var(--muted-foreground))' }}>Підрозділ</span>
+              <span style={{ color: 'hsl(var(--muted-foreground))' }}>Подразделение</span>
               <span style={{ color: 'hsl(var(--foreground))' }}>{cmd.unit}</span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: 'hsl(var(--muted-foreground))' }}>В посаді з</span>
+              <span style={{ color: 'hsl(var(--muted-foreground))' }}>В должности с</span>
               <span style={{ color: 'hsl(var(--foreground))' }}>{cmd.since}</span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: 'hsl(var(--muted-foreground))' }}>Нагороди</span>
+              <span style={{ color: 'hsl(var(--muted-foreground))' }}>Награды</span>
               <span className="flex items-center gap-1" style={{ color: 'var(--mil-amber)' }}>
                 <Icon name="Star" size={10} />{cmd.awards}
               </span>
@@ -364,23 +361,23 @@ const CommandersSection = () => (
   </div>
 );
 
-// ─── Analytics Section ────────────────────────────────────────────────────────
+// ─── Analytics ────────────────────────────────────────────────────────────────
 const AnalyticsSection = () => {
   const bars = [
     { label: "Пн", value: 65, events: 12 }, { label: "Вт", value: 82, events: 19 },
     { label: "Ср", value: 48, events: 8 }, { label: "Чт", value: 91, events: 24 },
     { label: "Пт", value: 73, events: 16 }, { label: "Сб", value: 55, events: 9 },
-    { label: "Нд", value: 88, events: 21 },
+    { label: "Вс", value: 88, events: 21 },
   ];
   return (
     <div className="animate-fade-in-up" style={{ animationFillMode: 'forwards' }}>
       <div className="mb-6">
-        <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>АНАЛІТИКА</h2>
-        <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Статистика за тиждень</p>
+        <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>АНАЛИТИКА</h2>
+        <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Статистика за неделю</p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="mil-card rounded-lg p-5">
-          <h3 className="font-oswald text-sm font-medium tracking-widest uppercase mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Активність подій</h3>
+          <h3 className="font-oswald text-sm font-medium tracking-widest uppercase mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Активность событий</h3>
           <div className="flex items-end gap-2 h-32">
             {bars.map((bar, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -393,7 +390,7 @@ const AnalyticsSection = () => {
           </div>
         </div>
         <div className="mil-card rounded-lg p-5">
-          <h3 className="font-oswald text-sm font-medium tracking-widest uppercase mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Джерела новин</h3>
+          <h3 className="font-oswald text-sm font-medium tracking-widest uppercase mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Источники новостей</h3>
           <div className="space-y-4 mb-6">
             {[{ label: "Telegram", percent: 68, color: "var(--mil-blue)" }, { label: "Facebook", percent: 32, color: "#818cf8" }].map((src, i) => (
               <div key={i}>
@@ -406,7 +403,7 @@ const AnalyticsSection = () => {
             ))}
           </div>
           <div className="grid grid-cols-3 gap-3 pt-4" style={{ borderTop: '1px solid var(--mil-border)' }}>
-            {[{ label: "Новин сьогодні", value: "47", color: "var(--mil-green)" }, { label: "Термінових", value: "8", color: "var(--mil-amber)" }, { label: "Каналів", value: "12", color: "var(--mil-blue)" }].map((s, i) => (
+            {[{ label: "Новостей сегодня", value: "47", color: "var(--mil-green)" }, { label: "Срочных", value: "8", color: "var(--mil-amber)" }, { label: "Каналов", value: "12", color: "var(--mil-blue)" }].map((s, i) => (
               <div key={i} className="text-center">
                 <div className="font-oswald text-2xl font-semibold" style={{ color: s.color }}>{s.value}</div>
                 <div className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.label}</div>
@@ -415,11 +412,11 @@ const AnalyticsSection = () => {
           </div>
         </div>
         <div className="mil-card rounded-lg p-5 lg:col-span-2">
-          <h3 className="font-oswald text-sm font-medium tracking-widest uppercase mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Стан підрозділів</h3>
+          <h3 className="font-oswald text-sm font-medium tracking-widest uppercase mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Состояние подразделений</h3>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Активні", count: 4, total: 6, color: "var(--mil-green)", cls: "status-active" },
-              { label: "Увага", count: 1, total: 6, color: "var(--mil-amber)", cls: "status-alert" },
+              { label: "Активные", count: 4, total: 6, color: "var(--mil-green)", cls: "status-active" },
+              { label: "Внимание", count: 1, total: 6, color: "var(--mil-amber)", cls: "status-alert" },
               { label: "Критично", count: 1, total: 6, color: "var(--mil-red)", cls: "status-critical" },
             ].map((item, i) => (
               <div key={i} className="text-center p-4 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)' }}>
@@ -435,20 +432,20 @@ const AnalyticsSection = () => {
   );
 };
 
-// ─── Settings Section ─────────────────────────────────────────────────────────
+// ─── Settings ─────────────────────────────────────────────────────────────────
 const SettingsSection = () => {
   const [tgToken, setTgToken] = useState("");
   const [fbToken, setFbToken] = useState("");
   return (
     <div className="animate-fade-in-up" style={{ animationFillMode: 'forwards' }}>
       <div className="mb-6">
-        <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>НАЛАШТУВАННЯ</h2>
-        <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Інтеграції та конфігурація</p>
+        <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>НАСТРОЙКИ</h2>
+        <p className="text-xs font-ibm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Интеграции и конфигурация</p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {[
-          { title: "Telegram", icon: "Send", color: "var(--mil-blue)", bg: "rgba(56,189,248,0.15)", border: "rgba(56,189,248,0.2)", channels: ["@operativniy_zsu", "@voenniy_kanal"], val: tgToken, set: setTgToken },
-          { title: "Facebook", icon: "Globe", color: "#818cf8", bg: "rgba(99,102,241,0.15)", border: "rgba(99,102,241,0.2)", channels: ["Генштаб ЗСУ", "Міноборони України"], val: fbToken, set: setFbToken },
+          { title: "Telegram", icon: "Send", color: "var(--mil-blue)", bg: "rgba(56,189,248,0.15)", border: "rgba(56,189,248,0.2)", channels: ["@operativniy_kanal", "@voenniy_kanal"], val: tgToken, set: setTgToken },
+          { title: "Facebook", icon: "Globe", color: "#818cf8", bg: "rgba(99,102,241,0.15)", border: "rgba(99,102,241,0.2)", channels: ["Официальная страница", "Пресс-служба"], val: fbToken, set: setFbToken },
         ].map((int, i) => (
           <div key={i} className="mil-card rounded-lg p-5">
             <div className="flex items-center gap-3 mb-4">
@@ -457,7 +454,7 @@ const SettingsSection = () => {
               </div>
               <div>
                 <h3 className="font-oswald font-semibold tracking-wide" style={{ color: 'hsl(var(--foreground))' }}>{int.title}</h3>
-                <span className="text-xs status-active px-1.5 py-0.5 rounded">АКТИВНИЙ</span>
+                <span className="text-xs status-active px-1.5 py-0.5 rounded">АКТИВЕН</span>
               </div>
             </div>
             <div className="space-y-3">
@@ -468,7 +465,7 @@ const SettingsSection = () => {
                   style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--mil-border)', color: 'hsl(var(--foreground))', outline: 'none' }} />
               </div>
               <div>
-                <label className="block text-xs font-ibm mb-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>Підключені канали</label>
+                <label className="block text-xs font-ibm mb-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>Подключённые каналы</label>
                 {int.channels.map((ch, j) => (
                   <div key={j} className="flex items-center justify-between py-2 text-xs font-ibm" style={{ borderBottom: '1px solid var(--mil-border)' }}>
                     <span style={{ color: int.color }}>{ch}</span>
@@ -478,19 +475,19 @@ const SettingsSection = () => {
               </div>
               <button className="w-full py-2 rounded text-xs font-ibm font-medium transition-all hover:opacity-90"
                 style={{ background: int.bg, color: int.color, border: `1px solid ${int.border}` }}>
-                + Додати канал
+                + Добавить канал
               </button>
             </div>
           </div>
         ))}
         <div className="mil-card rounded-lg p-5 lg:col-span-2">
-          <h3 className="font-oswald text-sm font-medium tracking-widest uppercase mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Системна інформація</h3>
+          <h3 className="font-oswald text-sm font-medium tracking-widest uppercase mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Системная информация</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Версія системи", value: "v1.0.0", icon: "Cpu" },
-              { label: "Останнє оновлення", value: "11.06.2026", icon: "RefreshCw" },
+              { label: "Версия системы", value: "v1.0.0", icon: "Cpu" },
+              { label: "Последнее обновление", value: "11.06.2026", icon: "RefreshCw" },
               { label: "Статус БД", value: "Online", icon: "Database" },
-              { label: "API запити/год", value: "1 247", icon: "Activity" },
+              { label: "API запросов/час", value: "1 247", icon: "Activity" },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)' }}>
                 <Icon name={item.icon} size={16} style={{ color: 'var(--mil-green)' }} />
@@ -507,14 +504,14 @@ const SettingsSection = () => {
   );
 };
 
-// ─── Nav config ───────────────────────────────────────────────────────────────
+// ─── Nav ──────────────────────────────────────────────────────────────────────
 const navItems: { id: Section; label: string; icon: string }[] = [
-  { id: "news", label: "Новини", icon: "Rss" },
-  { id: "units", label: "Підрозділи", icon: "Shield" },
-  { id: "brigades", label: "Бригади", icon: "Flag" },
-  { id: "commanders", label: "Командири", icon: "Star" },
-  { id: "analytics", label: "Аналітика", icon: "BarChart2" },
-  { id: "settings", label: "Налаштування", icon: "Settings" },
+  { id: "news", label: "Новости", icon: "Rss" },
+  { id: "units", label: "Подразделения", icon: "Shield" },
+  { id: "brigades", label: "Бригады", icon: "Flag" },
+  { id: "commanders", label: "Командиры", icon: "Star" },
+  { id: "analytics", label: "Аналитика", icon: "BarChart2" },
+  { id: "settings", label: "Настройки", icon: "Settings" },
 ];
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
@@ -591,10 +588,9 @@ export default function Index() {
         </div>
       </aside>
 
-      {/* Main area */}
+      {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-        {/* Header */}
         <header className="shrink-0 flex items-center justify-between px-6"
           style={{ height: 60, background: 'var(--mil-surface)', borderBottom: '1px solid var(--mil-border)' }}>
           <div className="flex items-center gap-4">
@@ -611,27 +607,24 @@ export default function Index() {
             <RadarWidget />
             <div className="text-right">
               <div className="font-mono text-xl font-bold" style={{ color: 'var(--mil-green)' }}>
-                {time.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                {time.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               </div>
               <div className="text-xs font-ibm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                {time.toLocaleDateString("uk-UA", { day: "numeric", month: "long", year: "numeric" })}
+                {time.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
               </div>
             </div>
           </div>
         </header>
 
-        {/* Live ticker */}
         <LiveTicker />
 
-        {/* Stats bar */}
         <div className="shrink-0 grid grid-cols-4 gap-4 px-6 py-4" style={{ borderBottom: '1px solid var(--mil-border)' }}>
-          <StatCard label="Підрозділів" value={mockUnits.length} icon="Shield" color="var(--mil-green)" delay={0} />
+          <StatCard label="Подразделений" value={mockUnits.length} icon="Shield" color="var(--mil-green)" delay={0} />
           <StatCard label="Бригад" value={mockBrigades.length} icon="Flag" color="var(--mil-blue)" delay={100} />
-          <StatCard label="Командирів" value={mockCommanders.length} icon="Star" color="var(--mil-amber)" delay={200} />
-          <StatCard label="Новин сьогодні" value={newsCount} icon="Rss" color="#818cf8" delay={300} />
+          <StatCard label="Командиров" value={mockCommanders.length} icon="Star" color="var(--mil-amber)" delay={200} />
+          <StatCard label="Новостей сегодня" value={newsCount} icon="Rss" color="#818cf8" delay={300} />
         </div>
 
-        {/* Section content */}
         <main className="flex-1 overflow-y-auto px-6 py-6" key={section}>
           {renderSection()}
         </main>
