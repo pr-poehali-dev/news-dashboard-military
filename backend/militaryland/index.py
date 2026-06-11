@@ -3,6 +3,7 @@ import urllib3
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -13,21 +14,15 @@ CORS = {
 }
 
 SOURCES = [
-    {"name": "ArmiyaInform",   "rss": "https://armyinform.com.ua/feed/"},
-    {"name": "Ukrinform",      "rss": "https://www.ukrinform.ua/rss/block-war"},
-    {"name": "Censor.NET",     "rss": "https://censor.net/ru/rss/news"},
-    {"name": "Mil.in.ua",      "rss": "https://mil.in.ua/uk/feed/"},
-    {"name": "Defence Ukraine","rss": "https://defence-ua.com/feed/"},
-    {"name": "Pravda Ukraine", "rss": "https://www.pravda.com.ua/rss/view_news/"},
-    {"name": "UNIAN War",      "rss": "https://www.unian.net/rss/war.xml"},
-    {"name": "Interfax UA",    "rss": "https://ua.interfax.com.ua/news/military/rss.xml"},
-    {"name": "Suspilne",       "rss": "https://suspilne.media/rss.xml"},
+    {"name": "ArmiyaInform", "rss": "https://armyinform.com.ua/feed/"},
 ]
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "application/rss+xml, application/xml, text/xml, */*",
 }
+
+TIMEOUT = 8  # секунд на один запрос
 
 
 def get_image(item_dict, desc_raw):
@@ -63,7 +58,7 @@ def normalize_item(item, source_name):
 
 def via_rss2json(rss_url, source_name):
     url  = "https://api.rss2json.com/v1/api.json?rss_url=" + rss_url + "&count=20"
-    resp = requests.get(url, timeout=6)
+    resp = requests.get(url, timeout=TIMEOUT)
     data = resp.json()
     if data.get("status") == "ok" and data.get("items"):
         return [normalize_item(i, source_name) for i in data["items"] if i.get("title")]
@@ -71,7 +66,7 @@ def via_rss2json(rss_url, source_name):
 
 
 def via_direct(rss_url, source_name):
-    resp = requests.get(rss_url, headers=HEADERS, timeout=6, verify=False)
+    resp = requests.get(rss_url, headers=HEADERS, timeout=TIMEOUT, verify=False)
     if resp.status_code != 200:
         return []
     soup = BeautifulSoup(resp.text, "lxml-xml")
@@ -108,17 +103,17 @@ def via_direct(rss_url, source_name):
 
 
 def fetch_one(src):
-    result = []
+    # Сначала rss2json, потом прямой RSS
     try:
         result = via_rss2json(src["rss"], src["name"])
+        if result:
+            return result
     except BaseException:
-        result = []
-    if not result:
-        try:
-            result = via_direct(src["rss"], src["name"])
-        except BaseException:
-            result = []
-    return result
+        pass
+    try:
+        return via_direct(src["rss"], src["name"])
+    except BaseException:
+        return []
 
 
 def safe_date(d):
@@ -142,14 +137,21 @@ def handler(event, context):
     params = event.get("queryStringParameters") or {}
     page   = int(params.get("page", 1))
 
-    all_articles    = []
-    active_sources  = []
+    all_articles   = []
+    active_sources = []
 
-    for src in SOURCES:
-        items = fetch_one(src)
-        if items:
-            all_articles.extend(items)
-            active_sources.append(src["name"])
+    # Параллельный опрос всех источников — максимум 20 сек суммарно
+    with ThreadPoolExecutor(max_workers=9) as pool:
+        futures = {pool.submit(fetch_one, src): src["name"] for src in SOURCES}
+        for future in as_completed(futures, timeout=20):
+            name = futures[future]
+            try:
+                items = future.result()
+                if items:
+                    all_articles.extend(items)
+                    active_sources.append(name)
+            except BaseException:
+                pass
 
     all_articles.sort(key=lambda a: safe_date(a.get("date", "")), reverse=True)
 
