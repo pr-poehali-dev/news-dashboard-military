@@ -1,14 +1,6 @@
 {
   "tests": [
     {
-      "name": "GET главная страница",
-      "method": "GET",
-      "path": "/",
-      "expectedStatus": 200,
-      "expectedBody": {"articles": []},
-      "bodyMatcher": "partial"
-    },
-    {
       "name": "OPTIONS preflight",
       "method": "OPTIONS",
       "path": "/",

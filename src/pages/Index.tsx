@@ -10,6 +10,7 @@ interface MilArticle {
   date: string;
   image: string;
   category: string;
+  source: string;
 }
 
 type Section = "news" | "units" | "brigades" | "commanders" | "analytics" | "settings";
@@ -155,27 +156,29 @@ const RadarWidget = () => (
 
 // ─── News ─────────────────────────────────────────────────────────────────────
 const NewsSection = () => {
-  const [articles, setArticles] = useState<MilArticle[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState("");
-  const [page, setPage]         = useState(1);
-  const [total, setTotal]       = useState(0);
-  const [lastFetch, setLastFetch] = useState("");
-  const [catFilter, setCatFilter] = useState("all");
-  const [categories, setCategories] = useState<string[]>([]);
+  const [articles, setArticles]       = useState<MilArticle[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState("");
+  const [page, setPage]               = useState(1);
+  const [total, setTotal]             = useState(0);
+  const [lastFetch, setLastFetch]     = useState("");
+  const [catFilter, setCatFilter]     = useState("all");
+  const [srcFilter, setSrcFilter]     = useState("all");
+  const [categories, setCategories]   = useState<string[]>([]);
+  const [activeSources, setActiveSources] = useState<string[]>([]);
 
   const fetchNews = useCallback(async (p = 1) => {
     setLoading(true);
     setError("");
     try {
-      const res  = await fetch(`${API_URL}?page=${p}`);
-      const data = await res.json();
+      const res    = await fetch(`${API_URL}?page=${p}`);
+      const data   = await res.json();
       if (!res.ok) throw new Error(data.error || "Ошибка сервера");
       const parsed = JSON.parse(data.body || "{}");
       setArticles(parsed.articles || []);
       setTotal(parsed.total || 0);
       setLastFetch(parsed.fetched_at || "");
-      // Собираем уникальные категории
+      setActiveSources(parsed.active_sources || []);
       const cats: string[] = Array.from(new Set((parsed.articles || []).map((a: MilArticle) => a.category).filter(Boolean)));
       setCategories(cats);
     } catch (e) {
@@ -191,7 +194,9 @@ const NewsSection = () => {
     return () => clearInterval(t);
   }, [fetchNews, page]);
 
-  const filtered = catFilter === "all" ? articles : articles.filter(a => a.category === catFilter);
+  const filtered = articles
+    .filter(a => catFilter === "all" || a.category === catFilter)
+    .filter(a => srcFilter === "all" || a.source === srcFilter);
 
   const formatDate = (d: string) => {
     if (!d) return "";
@@ -207,7 +212,7 @@ const NewsSection = () => {
         <div>
           <h2 className="font-oswald text-2xl font-semibold tracking-wide" style={{ color: 'var(--mil-green)' }}>ЛЕНТА НОВОСТЕЙ</h2>
           <p className="text-xs font-ibm mt-1 flex items-center gap-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            <span>militaryland.net</span>
+            <span>{activeSources.length > 0 ? `${activeSources.length} источников` : "Загрузка..."}</span>
             {lastFetch && <span>· обновлено {formatDate(lastFetch)}</span>}
           </p>
         </div>
@@ -219,7 +224,25 @@ const NewsSection = () => {
         </button>
       </div>
 
-      {/* Категории */}
+      {/* Активные источники */}
+      {activeSources.length > 0 && (
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          {["all", ...activeSources].map(src => (
+            <button key={src} onClick={() => setSrcFilter(src)}
+              className="px-3 py-1 rounded text-xs font-ibm font-medium transition-all flex items-center gap-1.5"
+              style={{
+                background: srcFilter === src ? "rgba(56,189,248,0.15)" : "rgba(255,255,255,0.03)",
+                color: srcFilter === src ? "var(--mil-blue)" : "hsl(var(--muted-foreground))",
+                border: `1px solid ${srcFilter === src ? "rgba(56,189,248,0.3)" : "var(--mil-border)"}`,
+              }}>
+              {src !== "all" && <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--mil-green)' }} />}
+              {src === "all" ? "Все источники" : src}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Фильтр по категориям */}
       {categories.length > 0 && (
         <div className="flex items-center gap-2 mb-5 flex-wrap">
           {["all", ...categories].map(cat => (
@@ -236,11 +259,11 @@ const NewsSection = () => {
         </div>
       )}
 
-      {/* Состояния загрузки / ошибки */}
+      {/* Загрузка */}
       {loading && (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <div className="w-10 h-10 rounded-full border-2 animate-spin" style={{ borderColor: 'var(--mil-border)', borderTopColor: 'var(--mil-green)' }} />
-          <span className="text-xs font-ibm" style={{ color: 'hsl(var(--muted-foreground))' }}>Загрузка новостей с militaryland.net...</span>
+          <span className="text-xs font-ibm" style={{ color: 'hsl(var(--muted-foreground))' }}>Загрузка новостей из {activeSources.length || 9} источников...</span>
         </div>
       )}
 
@@ -283,9 +306,15 @@ const NewsSection = () => {
                     {item.description && (
                       <p className="text-xs font-ibm leading-relaxed line-clamp-2" style={{ color: 'hsl(var(--muted-foreground))' }}>{item.description}</p>
                     )}
-                    <div className="flex items-center gap-1 mt-2">
-                      <Icon name="ExternalLink" size={10} style={{ color: 'hsl(var(--muted-foreground))' }} />
-                      <span className="text-xs font-ibm" style={{ color: 'hsl(var(--muted-foreground))' }}>militaryland.net</span>
+                    <div className="flex items-center gap-3 mt-2">
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--mil-blue)' }} />
+                        <span className="text-xs font-ibm font-medium" style={{ color: 'var(--mil-blue)' }}>{item.source}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Icon name="ExternalLink" size={10} style={{ color: 'hsl(var(--muted-foreground))' }} />
+                        <span className="text-xs font-ibm" style={{ color: 'hsl(var(--muted-foreground))' }}>читать полностью</span>
+                      </div>
                     </div>
                   </div>
                 </div>
